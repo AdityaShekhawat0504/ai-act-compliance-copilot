@@ -1,0 +1,19 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environments
+.venv/
+venv/
+
+# Streamlit cache
+.streamlit/
+
+# SHAP and other generated images
+*.png
+
+# Monitoring log (runtime data)
+demo/monitoring_log.csv
+
+# VS Code settings (optional)
+.vscode/
