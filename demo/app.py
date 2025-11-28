@@ -1,6 +1,11 @@
 # app.py
+import os
+from openai import OpenAI
+
 import streamlit as st
 import pandas as pd
+import joblib
+
 
 from monitoring_utils import log_audit_run, load_monitoring_log
 from sklearn.model_selection import train_test_split
@@ -21,7 +26,7 @@ st.title("AI Act Compliance Copilot — Demo")
 st.sidebar.header("Demo Flow")
 page = st.sidebar.radio(
     "Step",
-    ["1. Risk Questionnaire", "2. Model Audit", "3. Report", "4. Monitoring Dashboard"]
+    ["1. Risk Questionnaire", "2. Model Audit", "3. Report", "4. Monitoring Dashboard", "5. Governance Copilot"]
 )
 
 
@@ -238,13 +243,17 @@ elif page == "2. Model Audit":
     st.header("2. Model Audit")
 
     st.write(
-        "Audit either the built-in synthetic credit model or upload your own tabular dataset "
-        "to train & audit a model."
+        "Audit either the built-in synthetic credit model, train on an uploaded dataset, "
+        "or upload an already-trained model with test data to audit as a black box."
     )
 
     mode = st.radio(
         "Choose audit mode",
-        ["Built-in synthetic credit demo", "Upload your own dataset"],
+        [
+            "Built-in synthetic credit demo",
+            "Upload your own dataset (train here)",
+            "Upload trained model + test data",
+        ],
     )
 
     # --- initialise session_state keys if not present (for synthetic mode) ---
@@ -358,10 +367,10 @@ elif page == "2. Model Audit":
                 st.image(shp_path, caption="SHAP summary — feature impact on default prediction")
 
     # ----------------------------------------------------------------------
-    # MODE 2: UPLOAD YOUR OWN DATASET
+    # MODE 2: UPLOAD YOUR OWN DATASET (TRAIN RF HERE)
     # ----------------------------------------------------------------------
-    else:
-        st.subheader("Upload Your Own Dataset")
+    elif mode == "Upload your own dataset (train here)":
+        st.subheader("Upload Your Own Dataset (Train RandomForest Inside App)")
 
         uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
         if uploaded_file is not None:
@@ -449,6 +458,115 @@ elif page == "2. Model Audit":
                 st.error(f"Failed to read or process uploaded CSV: {e}")
         else:
             st.info("Upload a CSV file to begin auditing your own dataset.")
+
+    # ----------------------------------------------------------------------
+    # MODE 3: UPLOAD TRAINED MODEL + TEST DATA
+    # ----------------------------------------------------------------------
+    else:
+        st.subheader("Upload Trained Model + Test Data")
+
+        st.markdown(
+            "Upload a pickled scikit-learn compatible model (`.pkl`/`.joblib`) and a CSV file "
+            "containing the test data, including the target column."
+        )
+
+        uploaded_model = st.file_uploader("Upload trained model (.pkl / .joblib)", type=["pkl", "joblib"])
+        uploaded_test = st.file_uploader("Upload test data CSV", type=["csv"])
+
+        if uploaded_test is not None:
+            try:
+                df_test = pd.read_csv(uploaded_test)
+                st.write("Preview of test data:")
+                st.dataframe(df_test.head())
+
+                target_col_t = st.selectbox("Choose target (label) column in test data", df_test.columns)
+                protected_col_t = st.selectbox(
+                    "Choose protected attribute column for fairness (optional)",
+                    ["(None)"] + list(df_test.columns)
+                )
+                domain_choice_t = st.selectbox(
+                    "Domain for this model (for risk/monitoring)",
+                    ["finance", "employment_hr", "healthcare_medical", "other"],
+                    key="domain_trained_model"
+                )
+
+                if st.button("Audit Uploaded Model (Black Box)"):
+                    if uploaded_model is None:
+                        st.error("Please upload a trained model file as well.")
+                    else:
+                        try:
+                            # Load model
+                            model_bb = joblib.load(uploaded_model)
+
+                            # Prepare test data
+                            df_clean_t = df_test.dropna(subset=[target_col_t])
+                            if protected_col_t != "(None)":
+                                df_clean_t = df_clean_t.dropna(subset=[protected_col_t])
+
+                            X_t = df_clean_t.drop(columns=[target_col_t])
+                            y_t = df_clean_t[target_col_t]
+
+                            X_t_numeric = X_t.select_dtypes(include=["number"])
+                            if X_t_numeric.shape[1] == 0:
+                                st.error("No numeric features found in test data after preprocessing.")
+                            else:
+                                numeric_cols_t = list(X_t_numeric.columns)
+
+                                # Evaluate using our common evaluation function
+                                metrics_t, preds_t, probs_t = evaluate_model(
+                                    model_bb,
+                                    numeric_cols_t,
+                                    X_t_numeric,
+                                    y_t
+                                )
+
+                                # Fairness if protected attribute chosen
+                                spd_t = None
+                                if protected_col_t != "(None)":
+                                    if protected_col_t in df_clean_t.columns:
+                                        prot_t = df_clean_t.loc[X_t_numeric.index, protected_col_t]
+                                        try:
+                                            spd_t = statistical_parity_difference(preds_t, prot_t.values)
+                                        except Exception as e:
+                                            st.warning(f"Could not compute SPD for protected attribute: {e}")
+                                    else:
+                                        st.warning("Protected column not found in cleaned data; skipping fairness metric.")
+
+                                st.subheader("Performance Metrics (Uploaded Trained Model)")
+                                colt1, colt2 = st.columns(2)
+                                with colt1:
+                                    st.metric("Accuracy", round(metrics_t["accuracy"], 3))
+                                with colt2:
+                                    st.metric("ROC AUC", round(metrics_t["roc_auc"], 3))
+
+                                st.write("Classification report (per class):")
+                                st.json(metrics_t["report"])
+
+                                if spd_t is not None:
+                                    st.subheader("Fairness (Statistical Parity Difference)")
+                                    st.write("SPD (protected=1 - protected=0):", round(spd_t, 3))
+                                    st.caption("Values near 0 indicate similar positive prediction rates across groups.")
+
+                                # Log this run into monitoring
+                                log_audit_run(
+                                    model_name="uploaded_trained_model",
+                                    domain=domain_choice_t,
+                                    accuracy=metrics_t["accuracy"],
+                                    roc_auc=metrics_t["roc_auc"],
+                                    spd=spd_t if spd_t is not None else 0.0,
+                                    risk_level="N/A",
+                                )
+
+                                st.success("Trained model audited and logged to monitoring.")
+                                st.info("Go to '4. Monitoring Dashboard' to see this run over time.")
+
+                        except Exception as e:
+                            st.error(f"Failed to load or audit the uploaded model: {e}")
+            except Exception as e:
+                st.error(f"Failed to read test data CSV: {e}")
+        else:
+            st.info("Upload your test data CSV to begin auditing a trained model.")
+
 # ====================================================
 #                PAGE 3: REPORT GENERATOR
 # ====================================================
@@ -542,3 +660,197 @@ elif page == "4. Monitoring Dashboard":
                 "This dashboard shows real audit runs over time — "
                 "in production, the same pattern would be fed by automated nightly or CI/CD checks."
             )
+# ====================================================
+#           PAGE 5: GOVERNANCE COPILOT (GPT-4o)
+# ====================================================
+elif page == "5. Governance Copilot":
+    st.header("5. Governance Copilot 🤖")
+
+    st.caption(
+        "Ask questions about your AI system's risk, fairness, documentation and compliance. "
+        "The copilot uses your previous inputs (risk questionnaire, model audit, monitoring logs) "
+        "plus GPT-4o to draft explanations and documentation."
+    )
+
+    # --- check API key ---
+    if os.getenv("OPENAI_API_KEY") is None:
+        st.error(
+            "OPENAI_API_KEY environment variable is not set.\n\n"
+            "Set it in your shell, e.g.:\n"
+            '`export OPENAI_API_KEY="sk-..."`'
+        )
+    else:
+        client = OpenAI()
+
+        # --- initialise chat history ---
+        if "copilot_history" not in st.session_state:
+            st.session_state.copilot_history = []
+
+        # --- build context from session and monitoring ---
+        context_parts = []
+
+        # Risk context
+        risk_level = st.session_state.get("risk_level")
+        risk_score = st.session_state.get("risk_score")
+        risk_breakdown = st.session_state.get("risk_breakdown")
+        risk_reasons = st.session_state.get("risk_reasons")
+
+        if risk_level is not None:
+            context_parts.append(
+                f"Risk classification:\n"
+                f"- Level: {risk_level}\n"
+                f"- Score: {risk_score}\n"
+            )
+            if risk_breakdown:
+                context_parts.append(
+                    "Risk breakdown by pillar: "
+                    + ", ".join(
+                        f"{k}={v}"
+                        for k, v in risk_breakdown.items()
+                        if k.endswith("_score")
+                    )
+                )
+            if risk_reasons:
+                flat_reasons = []
+                for pillar, reasons in risk_reasons.items():
+                    for r in reasons:
+                        flat_reasons.append(f"{pillar}: {r}")
+                context_parts.append(
+                    "Main reasons for this risk classification:\n- "
+                    + "\n- ".join(flat_reasons[:10])
+                )
+
+        # Model audit context (synthetic)
+        audit_metrics = st.session_state.get("audit_metrics")
+        audit_spd = st.session_state.get("audit_spd")
+
+        if audit_metrics is not None:
+            context_parts.append(
+                "Latest model audit (synthetic demo):\n"
+                f"- Accuracy: {audit_metrics.get('accuracy'):.3f}\n"
+                f"- ROC AUC: {audit_metrics.get('roc_auc'):.3f}\n"
+            )
+            if audit_spd is not None:
+                context_parts.append(
+                    f"- Statistical Parity Difference (SPD): {audit_spd:.3f}"
+                )
+
+        # Monitoring context
+        mon_df = load_monitoring_log()
+        if mon_df is not None and not mon_df.empty:
+            last_row = mon_df.iloc[-1]
+            context_parts.append(
+                "Monitoring snapshot (latest run):\n"
+                f"- Timestamp: {last_row['timestamp']}\n"
+                f"- Model: {last_row['model_name']}\n"
+                f"- Domain: {last_row['domain']}\n"
+                f"- Accuracy: {last_row['accuracy']:.3f}\n"
+                f"- ROC AUC: {last_row['roc_auc']:.3f}\n"
+                f"- SPD: {last_row['spd']:.3f}\n"
+                f"- Risk level logged: {last_row['risk_level']}"
+            )
+
+        if context_parts:
+            context_text = "\n\n".join(context_parts)
+        else:
+            context_text = (
+                "No prior context available from risk questionnaire, model audit or monitoring. "
+                "Only answer in general AI governance and EU AI Act terms."
+            )
+
+        st.markdown("#### Context used by the copilot (read only)")
+        with st.expander("Show internal context summary", expanded=False):
+            st.text(context_text)
+
+        st.markdown("#### Ask the Governance Copilot")
+
+        # quick action buttons
+        colb1, colb2, colb3 = st.columns(3)
+        quick_prompt = None
+        with colb1:
+            if st.button("Explain my risk level"):
+                quick_prompt = "Explain in simple terms why this system has the given risk level and what it implies under the EU AI Act."
+        with colb2:
+            if st.button("Explain fairness & SPD"):
+                quick_prompt = (
+                    "Explain what the Statistical Parity Difference value means for this model, "
+                    "whether it suggests bias, and what mitigation steps could be considered."
+                )
+        with colb3:
+            if st.button("Draft an executive summary"):
+                quick_prompt = (
+                    "Draft a one-paragraph executive summary of this AI system's risk classification, "
+                    "model performance, fairness status, and recommended next steps for compliance."
+                )
+
+        # user custom question
+        user_input = st.text_area(
+            "Or type your own question",
+            placeholder="For example: 'What documentation would we need for Annex IV?'",
+        )
+
+        ask_clicked = st.button("💬 Ask Copilot")
+
+        # show past messages
+        if st.session_state.copilot_history:
+            st.markdown("#### Conversation")
+            for msg in st.session_state.copilot_history[-8:]:
+                role = "You" if msg["role"] == "user" else "Copilot"
+                st.markdown(f"**{role}:** {msg['content']}")
+
+        # handle new question
+        if ask_clicked or quick_prompt is not None:
+            question = quick_prompt or user_input.strip()
+
+            if not question:
+                st.warning("Please type a question or use one of the quick action buttons.")
+            else:
+                with st.spinner("Asking GPT-4o..."):
+                    messages = [
+                        {
+                            "role": "system",
+                            "content": (
+                                "You are an AI governance and EU AI Act expert. "
+                                "You help explain risk classifications, model audits, fairness metrics, "
+                                "and generate documentation-like text (system summaries, checklists, Annex IV-style content). "
+                                "Use the given context about this specific system wherever possible. "
+                                "Be concrete, structured, and avoid legalese jargon where not needed."
+                            ),
+                        },
+                        {
+                            "role": "system",
+                            "content": (
+                                "Here is context about the current AI system and its audits:\n\n"
+                                + context_text
+                            ),
+                        },
+                    ]
+
+                    # add previous chat history
+                    for h in st.session_state.copilot_history[-6:]:
+                        messages.append({"role": h["role"], "content": h["content"]})
+
+                    messages.append({"role": "user", "content": question})
+
+                    try:
+                        response = client.chat.completions.create(
+                            model="gpt-4o-mini",
+                            messages=messages,
+                            temperature=0.2,
+                        )
+                        answer = response.choices[0].message.content
+
+                        # update history
+                        st.session_state.copilot_history.append(
+                            {"role": "user", "content": question}
+                        )
+                        st.session_state.copilot_history.append(
+                            {"role": "assistant", "content": answer}
+                        )
+
+                        st.markdown("#### Copilot Answer")
+                        st.write(answer)
+
+                    except Exception as e:
+                        st.error(f"Error calling OpenAI API: {e}")
+                        st.info("Check your OPENAI_API_KEY and internet connection.")

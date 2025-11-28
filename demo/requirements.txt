@@ -7,3 +7,5 @@ shap
 jinja2
 pdfkit
 xgboost
+openai>=1.40.0
+
