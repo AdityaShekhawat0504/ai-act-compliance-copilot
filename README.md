@@ -225,16 +225,6 @@ Potential future improvements include:
 
 ---
 
-## **License**
 
-Choose a license (MIT recommended).
-If added, reference it here:
-
-```
-Distributed under the MIT License.  
-See LICENSE for details.
-```
-
----
 
 
