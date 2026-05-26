@@ -1,19 +1,77 @@
-# Python cache
-__pycache__/
-*.pyc
+# ---------------------------------------------------------------------------
+# Claude Code project context — kept local only, never pushed to GitHub
+# ---------------------------------------------------------------------------
+CLAUDE.md
+.claude/
 
-# Virtual environments
+# ---------------------------------------------------------------------------
+# Local-only archive of the previous demo project — not for GitHub
+# ---------------------------------------------------------------------------
+_archive/
+
+# ---------------------------------------------------------------------------
+# Secrets and credentials
+# ---------------------------------------------------------------------------
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+credentials.json
+secrets.json
+# Allow committing the documented example env file
+!.env.example
+
+# ---------------------------------------------------------------------------
+# Python build artifacts
+# ---------------------------------------------------------------------------
 .venv/
 venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+build/
+dist/
+*.egg-info/
+.eggs/
 
-# Streamlit cache
-.streamlit/
+# ---------------------------------------------------------------------------
+# Tool caches
+# ---------------------------------------------------------------------------
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+.uv-cache/
+.hypothesis/
 
-# SHAP and other generated images
-*.png
-
-# Monitoring log (runtime data)
-demo/monitoring_log.csv
-
-# VS Code settings (optional)
+# ---------------------------------------------------------------------------
+# IDE / editor noise
+# ---------------------------------------------------------------------------
 .vscode/
+.idea/
+.cursor/
+*.swp
+*.swo
+*~
+
+# ---------------------------------------------------------------------------
+# OS noise
+# ---------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------------------------------------------------------------------------
+# Project-specific runtime outputs
+# ---------------------------------------------------------------------------
+# Generated Annex IV PDFs — produced by the tool, not source material.
+*.pdf
+output/
+outputs/
+# Raw benchmark run artifacts; only headline numbers belong in the README.
+benchmark/results/

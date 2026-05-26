@@ -1,0 +1,35 @@
+{
+  "artifact_type": "huggingface_model_card",
+  "source_uri": "huggingface://prajjwal1/bert-tiny",
+  "structured_content": {
+    "model_id": "prajjwal1/bert-tiny",
+    "license": [
+      "mit"
+    ],
+    "language": [
+      "en"
+    ],
+    "library_name": null,
+    "pipeline_tag": null,
+    "tags": [
+      "BERT",
+      "MNLI",
+      "NLI",
+      "transformer",
+      "pre-training"
+    ],
+    "datasets": null,
+    "metrics": null,
+    "model-index": null,
+    "intended_use": null,
+    "limitations": null,
+    "training_data": null,
+    "training_procedure": null,
+    "evaluation": null,
+    "ethical_considerations": null,
+    "environmental_impact": null,
+    "citation": null,
+    "description": null
+  },
+  "raw_text": "\nThe following model is a Pytorch pre-trained model obtained from converting Tensorflow checkpoint found in the [official Google BERT repository](https://github.com/google-research/bert). \n\nThis is one of the smaller pre-trained BERT variants, together with [bert-mini](https://huggingface.co/prajjwal1/bert-mini) [bert-small](https://huggingface.co/prajjwal1/bert-small) and [bert-medium](https://huggingface.co/prajjwal1/bert-medium). They were introduced in the study `Well-Read Students Learn Better: On the Importance of Pre-training Compact Models` ([arxiv](https://arxiv.org/abs/1908.08962)), and ported to HF for the study `Generalization in NLI: Ways (Not) To Go Beyond Simple Heuristics` ([arXiv](https://arxiv.org/abs/2110.01518)). These models are supposed to be trained on a downstream task.\n\nIf you use the model, please consider citing both the papers:\n```\n@misc{bhargava2021generalization,\n      title={Generalization in NLI: Ways (Not) To Go Beyond Simple Heuristics}, \n      author={Prajjwal Bhargava and Aleksandr Drozd and Anna Rogers},\n      year={2021},\n      eprint={2110.01518},\n      archivePrefix={arXiv},\n      primaryClass={cs.CL}\n}\n\n@article{DBLP:journals/corr/abs-1908-08962,\n  author    = {Iulia Turc and\n               Ming{-}Wei Chang and\n               Kenton Lee and\n               Kristina Toutanova},\n  title     = {Well-Read Students Learn Better: The Impact of Student Initialization\n               on Knowledge Distillation},\n  journal   = {CoRR},\n  volume    = {abs/1908.08962},\n  year      = {2019},\n  url       = {http://arxiv.org/abs/1908.08962},\n  eprinttype = {arXiv},\n  eprint    = {1908.08962},\n  timestamp = {Thu, 29 Aug 2019 16:32:34 +0200},\n  biburl    = {https://dblp.org/rec/journals/corr/abs-1908-08962.bib},\n  bibsource = {dblp computer science bibliography, https://dblp.org}\n}\n\n```\nConfig of this model:\n- `prajjwal1/bert-tiny` (L=2, H=128) [Model Link](https://huggingface.co/prajjwal1/bert-tiny)\n\n\nOther models to check out:\n- `prajjwal1/bert-mini` (L=4, H=256) [Model Link](https://huggingface.co/prajjwal1/bert-mini)\n- `prajjwal1/bert-small` (L=4, H=512) [Model Link](https://huggingface.co/prajjwal1/bert-small)\n- `prajjwal1/bert-medium` (L=8, H=512) [Model Link](https://huggingface.co/prajjwal1/bert-medium)\n\nOriginal Implementation and more info can be found in [this Github repository](https://github.com/prajjwal1/generalize_lm_nli).\n\nTwitter: [@prajjwal_1](https://twitter.com/prajjwal_1)\n"
+}
