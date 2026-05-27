@@ -26,6 +26,7 @@ packages = ["src/annex_iv", "src/ingestion", "src/extraction", "src/gap_analysis
 
 [dependency-groups]
 dev = [
+    "pypdf>=6.12.2",
     "pytest",
     "pytest-cov",
     "ruff",

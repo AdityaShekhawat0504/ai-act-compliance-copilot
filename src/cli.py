@@ -1,7 +1,7 @@
 """Typer CLI entry point for the Annex IV generator.
 
 Provides commands to ingest artifacts, run extraction, generate gap reports,
-and produce JSON output. Supports --model flag to select between
+and produce PDF/JSON output. Supports --model flag to select between
 gpt-4o-mini (default) and gpt-4o for harder extraction.
 
 See CLAUDE.md: "typer for the CLI"
@@ -21,6 +21,7 @@ from annex_iv.schema import AnnexIVDocument
 from extraction.pipeline import generate_annex_iv
 from gap_analysis.analyzer import analyze
 from ingestion.huggingface import HuggingFaceModelCardLoader
+from output.pdf import generate_pdf
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -42,6 +43,7 @@ def generate(
     model: str = typer.Option("gpt-4o-mini", "--model", "-m", help="OpenAI model name"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable INFO-level logging"),
     no_gap_report: bool = typer.Option(False, "--no-gap-report", help="Skip gap report"),
+    pdf: bool = typer.Option(True, "--pdf/--no-pdf", help="Generate PDF output"),
 ) -> None:
     """Generate Annex IV technical documentation from a model card."""
     if not os.environ.get("OPENAI_API_KEY"):
@@ -85,12 +87,15 @@ def generate(
     annex_path = output / f"{system_name}.annex_iv.json"
     gap_path = output / f"{system_name}.gap_report.json"
     summary_path = output / f"{system_name}.summary.txt"
+    pdf_path = output / f"{system_name}.pdf"
 
     try:
         annex_path.write_text(document.model_dump_json(indent=2))
         if not no_gap_report:
             gap_path.write_text(gap_report.model_dump_json(indent=2))
         summary_path.write_text(gap_report.summary)
+        if pdf:
+            generate_pdf(document, gap_report, pdf_path)
     except OSError as exc:
         _err(f"Error: cannot write to {output}: {exc.strerror}.")
         raise typer.Exit(code=1)
@@ -102,6 +107,8 @@ def generate(
     if not no_gap_report:
         typer.echo(f"  {gap_path}")
     typer.echo(f"  {summary_path}")
+    if pdf:
+        typer.echo(f"  {pdf_path}")
 
 
 def _print_item_progress(document: AnnexIVDocument) -> None:
@@ -132,6 +139,7 @@ def _print_item_progress(document: AnnexIVDocument) -> None:
 @app.command()
 def report(
     path: Path = typer.Argument(..., help="Path to a .annex_iv.json file"),
+    pdf: bool = typer.Option(False, "--pdf", help="Generate PDF output"),
 ) -> None:
     """Re-run gap analysis on a previously generated AnnexIVDocument JSON."""
     if not path.exists():
@@ -155,6 +163,15 @@ def report(
     gap_path.write_text(gap_report.model_dump_json(indent=2))
     typer.echo(gap_report.summary)
     typer.echo(f"Gap report written to {gap_path}")
+
+    if pdf:
+        if path.name.endswith(".annex_iv.json"):
+            stem = path.name.removesuffix(".annex_iv.json")
+        else:
+            stem = path.stem
+        pdf_path = path.parent / f"{stem}.pdf"
+        generate_pdf(document, gap_report, pdf_path)
+        typer.echo(f"PDF written to {pdf_path}")
 
 
 @app.command()
