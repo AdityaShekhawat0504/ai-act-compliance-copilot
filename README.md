@@ -199,7 +199,7 @@ Python 3.11 · uv · Pydantic v2 · instructor · OpenAI gpt-4o-mini · huggingf
 
 ## Author
 
-**Aditya Singh Shekhawat** -- B.Sc. Applied Artificial Intelligence at Technische Hochschule Rosenheim, focused on RegTech, AML, and AI governance tooling. [LinkedIn](https://www.linkedin.com/in/adikhawat/).
+**Aditya Singh Shekhawat** -- B.Sc. Applied Artificial Intelligence at Technische Hochschule Rosenheim, focused on RegTech, AML, and AI governance tooling. [LinkedIn](https://www.linkedin.com/in/aditya-singh-shekhawat/).
 
 ## License
 
