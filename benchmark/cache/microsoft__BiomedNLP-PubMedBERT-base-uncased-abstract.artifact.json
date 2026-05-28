@@ -1,0 +1,27 @@
+{
+  "artifact_type": "huggingface_model_card",
+  "source_uri": "huggingface://microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract",
+  "structured_content": {
+    "model_id": "microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract",
+    "license": "mit",
+    "language": "en",
+    "library_name": null,
+    "pipeline_tag": null,
+    "tags": [
+      "exbert"
+    ],
+    "datasets": null,
+    "metrics": null,
+    "model-index": null,
+    "intended_use": null,
+    "limitations": null,
+    "training_data": null,
+    "training_procedure": null,
+    "evaluation": null,
+    "ethical_considerations": null,
+    "environmental_impact": null,
+    "citation": "If you find BiomedBERT useful in your research, please cite the following paper:\n\n```latex\n@misc{pubmedbert,\n  author = {Yu Gu and Robert Tinn and Hao Cheng and Michael Lucas and Naoto Usuyama and Xiaodong Liu and Tristan Naumann and Jianfeng Gao and Hoifung Poon},\n  title = {Domain-Specific Language Model Pretraining for Biomedical Natural Language Processing},\n  year = {2020},\n  eprint = {arXiv:2007.15779},\n}\n```\n\n<a href=\"https://huggingface.co/exbert/?model=microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract&modelKind=bidirectional&sentence=Gefitinib%20is%20an%20EGFR%20tyrosine%20kinase%20inhibitor,%20which%20is%20often%20used%20for%20breast%20cancer%20and%20NSCLC%20treatment.&layer=10&heads=..0,1,2,3,4,5,6,7,8,9,10,11&threshold=0.7&tokenInd=17&tokenSide=right&maskInds=..&hideClsSep=true\">\n\t<img width=\"300px\" src=\"https://cdn-media.huggingface.co/exbert/button.png\">\n</a>",
+    "description": null
+  },
+  "raw_text": "\n## MSR BiomedBERT (abstracts only)\n\n<div style=\"border: 2px solid orange; border-radius:10px; padding:0px 10px; width: fit-content;\">\n\n* This model was previously named **\"PubMedBERT (abstracts)\"**.\n* You can either adopt the new model name \"microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract\" or update your `transformers` library to version 4.22+ if you need to refer to the old name.\n\n</div>\n\nPretraining large neural language models, such as BERT, has led to impressive gains on many natural language processing (NLP) tasks. However, most pretraining efforts focus on general domain corpora, such as newswire and Web. A prevailing assumption is that even domain-specific pretraining can benefit by starting from general-domain language models. [Recent work](https://arxiv.org/abs/2007.15779) shows that for domains with abundant unlabeled text, such as biomedicine, pretraining language models from scratch results in substantial gains over continual pretraining of general-domain language models.\n\nThis BiomedBERT is pretrained from scratch using _abstracts_ from [PubMed](https://pubmed.ncbi.nlm.nih.gov/). This model achieves state-of-the-art performance on several biomedical NLP tasks, as shown on the [Biomedical Language Understanding and Reasoning Benchmark](https://aka.ms/BLURB).\n\n## Citation\n\nIf you find BiomedBERT useful in your research, please cite the following paper:\n\n```latex\n@misc{pubmedbert,\n  author = {Yu Gu and Robert Tinn and Hao Cheng and Michael Lucas and Naoto Usuyama and Xiaodong Liu and Tristan Naumann and Jianfeng Gao and Hoifung Poon},\n  title = {Domain-Specific Language Model Pretraining for Biomedical Natural Language Processing},\n  year = {2020},\n  eprint = {arXiv:2007.15779},\n}\n```\n\n<a href=\"https://huggingface.co/exbert/?model=microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract&modelKind=bidirectional&sentence=Gefitinib%20is%20an%20EGFR%20tyrosine%20kinase%20inhibitor,%20which%20is%20often%20used%20for%20breast%20cancer%20and%20NSCLC%20treatment.&layer=10&heads=..0,1,2,3,4,5,6,7,8,9,10,11&threshold=0.7&tokenInd=17&tokenSide=right&maskInds=..&hideClsSep=true\">\n\t<img width=\"300px\" src=\"https://cdn-media.huggingface.co/exbert/button.png\">\n</a>\n"
+}

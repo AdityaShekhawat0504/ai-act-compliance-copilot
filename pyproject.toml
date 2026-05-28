@@ -22,7 +22,7 @@ dependencies = [
 compliance-copilot = "cli:app"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/annex_iv", "src/ingestion", "src/extraction", "src/gap_analysis", "src/output", "src"]
+packages = ["src/annex_iv", "src/ingestion", "src/extraction", "src/gap_analysis", "src/output", "src", "benchmark"]
 
 [dependency-groups]
 dev = [

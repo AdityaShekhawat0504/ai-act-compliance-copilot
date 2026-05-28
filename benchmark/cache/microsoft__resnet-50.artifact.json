@@ -1,0 +1,30 @@
+{
+  "artifact_type": "huggingface_model_card",
+  "source_uri": "huggingface://microsoft/resnet-50",
+  "structured_content": {
+    "model_id": "microsoft/resnet-50",
+    "license": "apache-2.0",
+    "language": null,
+    "library_name": null,
+    "pipeline_tag": null,
+    "tags": [
+      "vision",
+      "image-classification"
+    ],
+    "datasets": [
+      "imagenet-1k"
+    ],
+    "metrics": null,
+    "model-index": null,
+    "intended_use": null,
+    "limitations": null,
+    "training_data": null,
+    "training_procedure": null,
+    "evaluation": null,
+    "ethical_considerations": null,
+    "environmental_impact": null,
+    "citation": "```bibtex\n@inproceedings{he2016deep,\n  title={Deep residual learning for image recognition},\n  author={He, Kaiming and Zhang, Xiangyu and Ren, Shaoqing and Sun, Jian},\n  booktitle={Proceedings of the IEEE conference on computer vision and pattern recognition},\n  pages={770--778},\n  year={2016}\n}\n```",
+    "description": "ResNet (Residual Network) is a convolutional neural network that democratized the concepts of residual learning and skip connections. This enables to train much deeper models.\n\nThis is ResNet v1.5, which differs from the original model: in the bottleneck blocks which require downsampling, v1 has stride = 2 in the first 1x1 convolution, whereas v1.5 has stride = 2 in the 3x3 convolution. This difference makes ResNet50 v1.5 slightly more accurate (\\~0.5% top1) than v1, but comes with a small performance drawback (~5% imgs/sec) according to [Nvidia](https://catalog.ngc.nvidia.com/orgs/nvidia/resources/resnet_50_v1_5_for_pytorch).\n\n![model image](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/resnet_architecture.png)"
+  },
+  "raw_text": "\n# ResNet-50 v1.5\n\nResNet model pre-trained on ImageNet-1k at resolution 224x224. It was introduced in the paper [Deep Residual Learning for Image Recognition](https://arxiv.org/abs/1512.03385) by He et al. \n\nDisclaimer: The team releasing ResNet did not write a model card for this model so this model card has been written by the Hugging Face team.\n\n## Model description\n\nResNet (Residual Network) is a convolutional neural network that democratized the concepts of residual learning and skip connections. This enables to train much deeper models.\n\nThis is ResNet v1.5, which differs from the original model: in the bottleneck blocks which require downsampling, v1 has stride = 2 in the first 1x1 convolution, whereas v1.5 has stride = 2 in the 3x3 convolution. This difference makes ResNet50 v1.5 slightly more accurate (\\~0.5% top1) than v1, but comes with a small performance drawback (~5% imgs/sec) according to [Nvidia](https://catalog.ngc.nvidia.com/orgs/nvidia/resources/resnet_50_v1_5_for_pytorch).\n\n![model image](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/resnet_architecture.png)\n\n## Intended uses & limitations\n\nYou can use the raw model for image classification. See the [model hub](https://huggingface.co/models?search=resnet) to look for\nfine-tuned versions on a task that interests you.\n\n### How to use\n\nHere is how to use this model to classify an image of the COCO 2017 dataset into one of the 1,000 ImageNet classes:\n\n```python\nfrom transformers import AutoImageProcessor, ResNetForImageClassification\nimport torch\nfrom datasets import load_dataset\n\ndataset = load_dataset(\"huggingface/cats-image\")\nimage = dataset[\"test\"][\"image\"][0]\n\nprocessor = AutoImageProcessor.from_pretrained(\"microsoft/resnet-50\")\nmodel = ResNetForImageClassification.from_pretrained(\"microsoft/resnet-50\")\n\ninputs = processor(image, return_tensors=\"pt\")\n\nwith torch.no_grad():\n    logits = model(**inputs).logits\n\n# model predicts one of the 1000 ImageNet classes\npredicted_label = logits.argmax(-1).item()\nprint(model.config.id2label[predicted_label])\n```\n\nFor more code examples, we refer to the [documentation](https://huggingface.co/docs/transformers/main/en/model_doc/resnet).\n\n### BibTeX entry and citation info\n\n```bibtex\n@inproceedings{he2016deep,\n  title={Deep residual learning for image recognition},\n  author={He, Kaiming and Zhang, Xiangyu and Ren, Shaoqing and Sun, Jian},\n  booktitle={Proceedings of the IEEE conference on computer vision and pattern recognition},\n  pages={770--778},\n  year={2016}\n}\n```\n"
+}

@@ -175,6 +175,25 @@ def report(
 
 
 @app.command()
+def benchmark(
+    models_yaml: Path = typer.Option(Path("benchmark/models.yaml"), "--models", help="Path to models YAML"),
+    output_dir: Path = typer.Option(Path("benchmark/results"), "--output", "-o", help="Output directory"),
+    force: bool = typer.Option(False, "--force", help="Re-run even if cached"),
+    model: str = typer.Option("gpt-4o-mini", "--model", "-m", help="OpenAI model name"),
+) -> None:
+    """Run the 10-model benchmark and write aggregate results."""
+    if not os.environ.get("OPENAI_API_KEY"):
+        _err("Error: OPENAI_API_KEY environment variable is not set. Set it with `export OPENAI_API_KEY=...` and re-run.")
+        raise typer.Exit(code=1)
+
+    logging.basicConfig(level=logging.INFO, stream=sys.stderr, format="%(message)s")
+
+    from benchmark.run_benchmark import run_benchmark as _run
+
+    _run(models_yaml, output_dir, openai_model=model, force=force)
+
+
+@app.command()
 def version() -> None:
     """Print the package version."""
     try:
