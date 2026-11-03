@@ -1,0 +1,90 @@
+# FICTIONAL EXAMPLE. Brightloop Software GmbH does not exist.
+# Demo input for: evidence-pack demo   (or: evidence-pack build -q examples/brightloop/questionnaire.yaml)
+label: "FICTIONAL EXAMPLE: Brightloop Software GmbH is not a real company."
+
+documents:
+  - README.md
+  - model_card.md
+  - privacy_policy.md
+
+answers:
+  # --- System ---
+  company_name: Brightloop Software GmbH (fictional)
+  system_name: Brightloop HR Cloud
+  system_description:
+    value: SaaS applicant tracking system with an AI candidate assistant, an AI job ad writer and AI shortlist ranking of job applications.
+    evidence: {file: model_card.md, quote: "Ranks job applications against the requirements of a specific job posting to help recruiters decide whom to interview."}
+  provider_address:
+    value: Beispielweg 12, 80331 München, Germany
+    evidence: {file: privacy_policy.md, quote: "Brightloop Software GmbH, Beispielweg 12, 80331 München, Germany"}
+  system_version:
+    value: Brightloop HR Cloud 4.2
+    evidence: {file: README.md, quote: "Current release: Brightloop HR Cloud 4.2."}
+  distribution_form:
+    value: SaaS in the browser and REST API
+    evidence: {file: README.md, quote: "Customers use it in the browser and through a REST API."}
+  ai_governance_contact:
+    value: ai-governance@brightloop.example
+    evidence: {file: privacy_policy.md, quote: "Questions about our use of AI can be sent to ai-governance@brightloop.example."}
+
+  # --- Role ---
+  places_on_market_under_own_name: yes
+  rebrands_or_substantially_modifies: no
+  uses_ai_internally: yes          # Brightloop hires its own staff with the product
+
+  # --- Risk ---
+  prohibited_practices: []
+  annex_iii_areas:
+    value: [employment]
+    evidence: {file: README.md, quote: "The system ranks incoming applications against the job requirements and suggests a shortlist to the recruiter."}
+  annex_iii_derogation_claimed: no
+  performs_profiling: yes
+  safety_component_annex_i_product: no
+
+  # --- Transparency ---
+  interacts_with_people:
+    value: yes
+    evidence: {file: README.md, quote: "A chat assistant on the careers page answers applicants' questions about open roles and the application process."}
+  generates_synthetic_content:
+    value: yes
+    evidence: {file: README.md, quote: "the job ad writer drafts the full job advertisement text with AI"}
+  emotion_recognition: no
+  biometric_categorisation: no
+  generates_deepfakes: no
+  publishes_public_interest_text: no
+  on_eu_market_before_2026_08_02: yes
+
+  # --- GPAI ---
+  uses_gpai_model:
+    value: yes
+    evidence: {file: README.md, quote: "call a third-party large language model (GPT-4o via the Azure OpenAI Service)"}
+  gpai_model_names: GPT-4o (Azure OpenAI Service)
+  trains_own_gpai_model: no
+
+  # --- Evidence ---
+  ai_literacy_programme: unknown
+  discloses_ai_interaction:
+    value: yes
+    evidence: {file: README.md, quote: "The assistant opens every conversation with a notice that the applicant is talking to an AI assistant."}
+  marks_output_machine_readable: no
+  has_gpai_provider_documentation: unknown
+  trains_on_customer_data:
+    value: yes
+    evidence: {file: privacy_policy.md, quote: "Customer data is used to train the shortlist ranker only if the customer has opted in to model training in the admin settings."}
+  training_data_description:
+    value: 410,000 anonymised applications and hiring outcomes from 37 opted-in customers (2022-2025); names, photos, dates of birth and addresses removed.
+    evidence: {file: model_card.md, quote: "Trained on 410,000 anonymised applications and hiring outcomes from 37 customers who opted in to model training between 2022 and 2025."}
+  known_limitations:
+    value: Performs worse for roles with fewer than 50 historical applications and for CVs not in English or German.
+    evidence: {file: model_card.md, quote: "The ranker performs worse for roles with fewer than 50 historical applications and for CVs that are not in English or German."}
+  performance_metrics:
+    value: Precision@10 against recruiter shortlists; selection-rate ratio between gender groups (release gate above 0.8).
+    evidence: {file: model_card.md, quote: "The selection-rate ratio must stay above 0.8 before a release ships."}
+  human_oversight_description:
+    value: Recruiters see the score and top factors, can re-order the shortlist and must confirm every rejection; nothing is rejected automatically.
+    evidence: {file: model_card.md, quote: "Recruiters see the score and the top factors, can re-order the shortlist manually, and must confirm every rejection."}
+  has_event_logging:
+    value: yes
+    evidence: {file: README.md, quote: "Every ranking request and response is written to an audit log that customers can export."}
+  # Left unanswered on purpose so the pack shows them as gaps:
+  # risk_management_description, has_quality_management_system, post_market_monitoring_description
