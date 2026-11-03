@@ -71,7 +71,7 @@ desktop.ini
 # ---------------------------------------------------------------------------
 # Generated Annex IV PDFs — produced by the tool, not source material.
 *.pdf
-output/
-outputs/
+/output/
+/outputs/
 # Raw benchmark run artifacts; only headline numbers belong in the README.
 benchmark/results/
