@@ -3,8 +3,6 @@
 Implements Pass 2 of the extraction pipeline: verifies that each candidate
 value is actually grounded in the source artifact. Attaches Provenance
 objects to validated fields; drops ungrounded candidates to the gap report.
-
-See CLAUDE.md: "Provenance is non-negotiable" and "No fabrication"
 """
 
 from __future__ import annotations

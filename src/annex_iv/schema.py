@@ -4,8 +4,6 @@ The foundation of the entire pipeline — every other module reads from or write
 these models. Each field carries a Provenance object tracking source artifact,
 locator, extraction timestamp, and model used. Fields without provenance are
 treated as gaps, not content.
-
-See CLAUDE.md: "Annex IV schema (src/annex_iv/schema.py)"
 """
 
 from __future__ import annotations
