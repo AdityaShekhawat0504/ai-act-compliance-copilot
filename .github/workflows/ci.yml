@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "v2/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # No secrets: every LLM call is mocked in tests and the eval runs offline.
+      OPENAI_API_KEY: ""
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Tests
+        run: uv run pytest -q
+
+      - name: UI smoke test
+        run: uv run --with streamlit pytest -q tests/test_ui_app.py
+
+      - name: Eval (15 fictional systems, offline)
+        run: uv run python eval/run_eval.py --fail-under 1.0
+
+      - name: Demo end to end
+        run: uv run evidence-pack demo -o output/brightloop
