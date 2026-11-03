@@ -171,7 +171,7 @@ class TestMinimal:
         assert sc["tags"] is not None
 
     def test_no_exception_on_missing_sections(self) -> None:
-        loader = HuggingFaceModelCardLoader()
+        HuggingFaceModelCardLoader()
         artifact = _fetch_and_cache("minimal", MODELS["minimal"])
         assert artifact is not None
 

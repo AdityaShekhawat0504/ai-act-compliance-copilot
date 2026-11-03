@@ -15,7 +15,6 @@ from pydantic import BaseModel
 
 from annex_iv.schema import AnnexIVDocument, DocumentedField
 
-
 # ---------------------------------------------------------------------------
 # Item mapping
 # ---------------------------------------------------------------------------

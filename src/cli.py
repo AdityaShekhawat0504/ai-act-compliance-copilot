@@ -63,9 +63,9 @@ def generate(
         exc_type = type(exc).__name__
         if "RepositoryNotFoundError" in exc_type or "404" in str(exc) or "not found" in str(exc).lower():
             _err(f"Error: model '{source}' not found on HuggingFace Hub or as a local file.")
-            raise typer.Exit(code=1)
+            raise typer.Exit(code=1) from None
         _err(f"Error: failed to fetch from HuggingFace ({exc_type}). Check your connection and try again.")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from None
 
     document = generate_annex_iv(artifact, model=model)
 
@@ -80,7 +80,7 @@ def generate(
         output.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
         _err(f"Error: cannot write to {output}: {exc.strerror}.")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from None
 
     annex_path = output / f"{system_name}.annex_iv.json"
     gap_path = output / f"{system_name}.gap_report.json"
@@ -96,11 +96,11 @@ def generate(
             generate_pdf(document, gap_report, pdf_path)
     except OSError as exc:
         _err(f"Error: cannot write to {output}: {exc.strerror}.")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from None
 
     typer.echo(f"\n{gap_report.summary}")
     typer.echo(f"Gaps: {len(gap_report.gaps)}")
-    typer.echo(f"\nOutput files:")
+    typer.echo("\nOutput files:")
     typer.echo(f"  {annex_path}")
     if not no_gap_report:
         typer.echo(f"  {gap_path}")
@@ -149,7 +149,7 @@ def report(
         document = AnnexIVDocument.model_validate_json(raw)
     except Exception:
         _err(f"Error: '{path}' is not a valid AnnexIVDocument JSON file.")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from None
 
     gap_report = analyze(document)
 

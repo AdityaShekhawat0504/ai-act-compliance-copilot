@@ -29,7 +29,6 @@ from extraction.pipeline import (
 from extraction.validators import GroundingCheck, validate_grounding
 from ingestion.base import NormalisedArtifact
 
-
 FIXTURES_DIR = Path(__file__).parent / "fixtures" / "huggingface"
 
 

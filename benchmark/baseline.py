@@ -23,8 +23,8 @@ from annex_iv.schema import (
     Provenance,
 )
 from extraction.pipeline import (
-    FieldCandidate,
     _ITEM_ATTRS,
+    FieldCandidate,
     _candidate_model_for,
     _get_client,
 )
