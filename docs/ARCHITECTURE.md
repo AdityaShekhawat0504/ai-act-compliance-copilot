@@ -14,7 +14,7 @@ Two products share one extraction core:
 | Two-pass extraction | `src/extraction/` | Pass 1: `FieldCandidate` per field via instructor. Pass 2: `validate_grounding`, an independent LLM check against raw text; the only path to `filled`. |
 | Gap analysis | `src/gap_analysis/analyzer.py` | Deterministic completeness scores and missing-field list with regulation text. |
 | Annex IV PDF | `src/output/pdf.py` | Cover, 9 item sections, Appendix A (gaps), Appendix B (provenance). |
-| Facts | `src/evidence_pack/facts.py` | Registry of ~45 facts (bool, text, list). `Fact` refuses `known` from a document without a verified quote. |
+| Facts | `src/evidence_pack/facts.py` | Registry of 41 facts (bool, text, list). `Fact` refuses `known` from a document without a verified quote. |
 | Documents | `src/evidence_pack/documents.py` | Load .md/.txt/.pdf (pypdf). `verify_quote`: verbatim match after whitespace and curly-quote normalisation, minimum 12 characters. |
 | Fact extraction | `src/evidence_pack/extract.py` | Pass 1 asks for value + quote per fact. Code quote check. Pass 2 = existing `validate_grounding`. Merges documents; questionnaire overrides. |
 | Questionnaire | `src/evidence_pack/questionnaire.py` | Offline structured input; verifies optional evidence quotes against listed documents. |
