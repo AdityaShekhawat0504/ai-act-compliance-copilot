@@ -3,8 +3,6 @@
 Fetches and parses model cards from the HuggingFace Hub into NormalisedArtifact
 instances. This is the first and primary ingestion source — the benchmark runs
 against 10 public HuggingFace models.
-
-See CLAUDE.md: "Start with huggingface.py (model cards)"
 """
 
 from __future__ import annotations

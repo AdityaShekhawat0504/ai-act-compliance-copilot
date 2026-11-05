@@ -5,8 +5,6 @@ downstream — schema, extraction, output — uses Pydantic for validation and
 serialisation. Keeping the ingestion layer on the same foundation means we
 get free JSON round-tripping, type coercion, and consistent `.model_dump()`
 across the entire pipeline.
-
-See CLAUDE.md: "Artifact ingestion (src/ingestion/)"
 """
 
 from __future__ import annotations

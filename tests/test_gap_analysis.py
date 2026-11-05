@@ -20,7 +20,6 @@ from gap_analysis.analyzer import (
     suggested_artifact_for,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -70,7 +69,7 @@ def _all_schema_fields() -> list[tuple[int, str]]:
 
 
 def _fill_every_field(doc: AnnexIVDocument) -> None:
-    for item_number, attr in _ITEM_TO_ATTR.items():
+    for _item_number, attr in _ITEM_TO_ATTR.items():
         item_model = getattr(doc, attr)
         for field_name in type(item_model).model_fields:
             setattr(item_model, field_name, _filled(f"filled-{field_name}"))

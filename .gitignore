@@ -1,10 +1,4 @@
 # ---------------------------------------------------------------------------
-# Claude Code project context — kept local only, never pushed to GitHub
-# ---------------------------------------------------------------------------
-CLAUDE.md
-.claude/
-
-# ---------------------------------------------------------------------------
 # Local-only archive of the previous demo project — not for GitHub
 # ---------------------------------------------------------------------------
 _archive/
@@ -71,7 +65,7 @@ desktop.ini
 # ---------------------------------------------------------------------------
 # Generated Annex IV PDFs — produced by the tool, not source material.
 *.pdf
-output/
-outputs/
+/output/
+/outputs/
 # Raw benchmark run artifacts; only headline numbers belong in the README.
 benchmark/results/

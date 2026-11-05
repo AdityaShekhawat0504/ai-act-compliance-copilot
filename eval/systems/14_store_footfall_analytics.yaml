@@ -1,0 +1,24 @@
+# FICTIONAL SYSTEM, for evaluation only. Not a real company or product.
+name: "Fictional: Aisle Insights shopper age-band camera analytics"
+description: A retailer uses a bought camera system that estimates shoppers' age band from their faces (no sensitive attributes, no identification).
+answers:
+  places_on_market_under_own_name: no
+  rebrands_or_substantially_modifies: no
+  uses_ai_internally: yes
+  prohibited_practices: []
+  annex_iii_areas: []
+  safety_component_annex_i_product: no
+  interacts_with_people: no
+  generates_synthetic_content: no
+  emotion_recognition: no
+  biometric_categorisation: yes
+  generates_deepfakes: no
+  publishes_public_interest_text: no
+  uses_gpai_model: no
+  trains_own_gpai_model: no
+expected:
+  role: deployer
+  risk_tier: limited_risk
+  art50_triggers: [emotion_biometric]
+  gpai_use: none
+  ai_literacy: true

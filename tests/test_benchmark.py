@@ -6,17 +6,13 @@ benchmark is too expensive (~$0.20, ~30 min) for CI.
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
-from unittest.mock import patch
 
 import pytest
 from typer.testing import CliRunner
 
 from annex_iv.schema import (
     AnnexIVDocument,
-    AnnexIVItem1General,
-    DocumentedField,
 )
 from benchmark.baseline import generate_annex_iv_baseline
 from benchmark.run_benchmark import compute_aggregate, generate_readme_snippet

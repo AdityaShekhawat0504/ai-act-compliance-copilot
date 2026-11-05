@@ -5,8 +5,6 @@ using structured-output LLM calls via instructor.
 Pass 2: validates each candidate against the source artifact and attaches
 provenance, or drops it. Explicit refusal to fabricate values not
 grounded in the source.
-
-See CLAUDE.md: "LLM-assisted field extraction (src/extraction/)"
 """
 
 from __future__ import annotations

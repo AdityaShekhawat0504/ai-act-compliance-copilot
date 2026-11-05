@@ -1,0 +1,23 @@
+# FICTIONAL SYSTEM, for evaluation only. Not a real company or product.
+name: "Fictional: AdCanvas image studio"
+description: SaaS that generates marketing images and short videos, including realistic people and product scenes.
+answers:
+  places_on_market_under_own_name: yes
+  uses_ai_internally: no
+  prohibited_practices: []
+  annex_iii_areas: []
+  safety_component_annex_i_product: no
+  interacts_with_people: no
+  generates_synthetic_content: yes
+  emotion_recognition: no
+  biometric_categorisation: no
+  generates_deepfakes: yes
+  publishes_public_interest_text: no
+  uses_gpai_model: yes
+  trains_own_gpai_model: no
+expected:
+  role: provider
+  risk_tier: limited_risk
+  art50_triggers: [synthetic_content, deepfake]
+  gpai_use: integrates_third_party
+  ai_literacy: true

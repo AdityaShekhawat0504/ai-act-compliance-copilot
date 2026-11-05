@@ -5,8 +5,6 @@ surface what is missing, which Annex IV item it maps to, the verbatim
 regulation clause that defines it, and the artifact type that would typically
 fill it. Pure deterministic analysis over an
 :class:`annex_iv.schema.AnnexIVDocument` — no LLM calls.
-
-See CLAUDE.md: "Gap analysis (src/gap_analysis/)".
 """
 
 from __future__ import annotations
@@ -16,7 +14,6 @@ from typing import Iterator, Literal
 from pydantic import BaseModel
 
 from annex_iv.schema import AnnexIVDocument, DocumentedField
-
 
 # ---------------------------------------------------------------------------
 # Item mapping

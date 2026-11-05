@@ -1,0 +1,396 @@
+# EU AI Act classification and obligation rules for the evidence pack.
+#
+# This is the ONLY place classification logic is defined. Code in
+# evidence_pack/rules.py evaluates these conditions deterministically; no LLM
+# is ever asked to classify. Every rule carries an article reference into
+# Regulation (EU) 2024/1689. Deadlines are keys into deadlines.yaml.
+#
+# Condition grammar (see evidence_pack/rules.py):
+#   {always: true}
+#   {field: NAME, eq: VALUE}            fact or derived value equals VALUE
+#   {field: NAME, nonempty: true}       list or text has content
+#   {field: NAME, intersects: [A, B]}   list shares at least one element
+#   {all: [COND, ...]} / {any: [COND, ...]} / {not: COND}
+# A field whose value is unknown never satisfies eq / nonempty / intersects,
+# and every unknown field a rule looks at is reported as a gap.
+#
+# Bump `version` on every change and record it in the CHANGELOG section below.
+# CHANGELOG
+#   1.0.0  First rule set: roles, risk tiers, Art. 50 triggers, GPAI, Art. 4.
+version: "1.0.0"
+
+# ---------------------------------------------------------------------------
+# Catalogues referenced by facts
+# ---------------------------------------------------------------------------
+prohibited_practices:
+  - {id: manipulative_techniques, article: "Art. 5(1)(a)", label: "Subliminal, manipulative or deceptive techniques that materially distort behaviour and cause significant harm"}
+  - {id: exploiting_vulnerabilities, article: "Art. 5(1)(b)", label: "Exploiting vulnerabilities due to age, disability or social or economic situation"}
+  - {id: social_scoring, article: "Art. 5(1)(c)", label: "Social scoring leading to detrimental or unfavourable treatment"}
+  - {id: crime_risk_profiling, article: "Art. 5(1)(d)", label: "Predicting criminal offences based solely on profiling or personality traits"}
+  - {id: untargeted_face_scraping, article: "Art. 5(1)(e)", label: "Untargeted scraping of facial images to build facial recognition databases"}
+  - {id: emotion_recognition_work_education, article: "Art. 5(1)(f)", label: "Emotion recognition in the workplace or in education (except medical or safety reasons)"}
+  - {id: biometric_categorisation_sensitive, article: "Art. 5(1)(g)", label: "Biometric categorisation to infer race, political opinions, union membership, religion, sex life or sexual orientation"}
+  - {id: realtime_rbi_law_enforcement, article: "Art. 5(1)(h)", label: "Real-time remote biometric identification in public spaces for law enforcement"}
+
+annex_iii_areas:
+  - {id: biometrics, article: "Annex III, point 1", label: "Biometrics (remote identification, categorisation, emotion recognition)"}
+  - {id: critical_infrastructure, article: "Annex III, point 2", label: "Safety components of critical infrastructure"}
+  - {id: education, article: "Annex III, point 3", label: "Education and vocational training (admission, assessment, proctoring)"}
+  - {id: employment, article: "Annex III, point 4", label: "Employment and worker management (recruitment, CV screening, promotion, termination, monitoring)"}
+  - {id: public_benefits, article: "Annex III, point 5(a)", label: "Eligibility for public assistance benefits and services"}
+  - {id: credit_scoring, article: "Annex III, point 5(b)", label: "Creditworthiness or credit scoring of natural persons"}
+  - {id: life_health_insurance, article: "Annex III, point 5(c)", label: "Risk assessment and pricing for life and health insurance"}
+  - {id: emergency_triage, article: "Annex III, point 5(d)", label: "Evaluating and triaging emergency calls"}
+  - {id: law_enforcement, article: "Annex III, point 6", label: "Law enforcement"}
+  - {id: migration_border, article: "Annex III, point 7", label: "Migration, asylum and border control"}
+  - {id: justice_democracy, article: "Annex III, point 8", label: "Administration of justice and democratic processes"}
+
+# ---------------------------------------------------------------------------
+# Derived values, evaluated top to bottom (later ones may use earlier ones)
+# ---------------------------------------------------------------------------
+derived:
+  - id: is_provider
+    article: "Art. 3(3); Art. 25(1)"
+    when:
+      any:
+        - {field: places_on_market_under_own_name, eq: true}
+        - {field: rebrands_or_substantially_modifies, eq: true}
+
+  - id: is_deployer
+    article: "Art. 3(4)"
+    when: {field: uses_ai_internally, eq: true}
+
+  - id: is_prohibited
+    article: "Art. 5(1)"
+    when: {field: prohibited_practices, nonempty: true}
+
+  - id: high_risk_annex_i
+    article: "Art. 6(1); Annex I"
+    when: {field: safety_component_annex_i_product, eq: true}
+
+  # Art. 6(3): an Annex III system is not high-risk if it does not pose a
+  # significant risk (narrow procedural task, etc.), but never when it
+  # profiles natural persons.
+  - id: annex_iii_derogation
+    article: "Art. 6(3)"
+    when:
+      all:
+        - {field: annex_iii_areas, nonempty: true}
+        - {field: annex_iii_derogation_claimed, eq: true}
+        - {field: performs_profiling, eq: false}
+
+  - id: high_risk_annex_iii
+    article: "Art. 6(2); Annex III"
+    when:
+      all:
+        - {field: annex_iii_areas, nonempty: true}
+        - {not: {field: annex_iii_derogation, eq: true}}
+
+  - id: is_high_risk
+    article: "Art. 6"
+    when:
+      any:
+        - {field: high_risk_annex_i, eq: true}
+        - {field: high_risk_annex_iii, eq: true}
+
+# ---------------------------------------------------------------------------
+# Role (first match wins)
+# ---------------------------------------------------------------------------
+roles:
+  - id: both
+    article: "Art. 3(3), Art. 3(4)"
+    when: {all: [{field: is_provider, eq: true}, {field: is_deployer, eq: true}]}
+  - id: provider
+    article: "Art. 3(3); Art. 25(1)"
+    when: {field: is_provider, eq: true}
+  - id: deployer
+    article: "Art. 3(4)"
+    when: {field: is_deployer, eq: true}
+  - id: none
+    article: "Art. 2"
+    when: {always: true}
+
+# ---------------------------------------------------------------------------
+# Article 50 transparency triggers (feature-based; who must act is set per
+# obligation below). Each carries a suggested disclosure text.
+# ---------------------------------------------------------------------------
+transparency_triggers:
+  - id: chatbot
+    article: "Art. 50(1)"
+    label: "AI system interacts directly with natural persons"
+    when: {field: interacts_with_people, eq: true}
+    disclosure: >-
+      You are chatting with an AI assistant provided by {company_name}, not
+      with a human. Answers are generated automatically and may contain errors.
+
+  - id: synthetic_content
+    article: "Art. 50(2)"
+    label: "AI system generates synthetic audio, image, video or text"
+    when: {field: generates_synthetic_content, eq: true}
+    disclosure: >-
+      This content was generated with AI by {system_name}. Generated files
+      carry a machine-readable marker identifying them as AI-generated.
+
+  - id: emotion_biometric
+    article: "Art. 50(3)"
+    label: "Emotion recognition or biometric categorisation"
+    when:
+      any:
+        - {field: emotion_recognition, eq: true}
+        - {field: biometric_categorisation, eq: true}
+    disclosure: >-
+      This service uses an AI system that analyses your face, voice or other
+      biometric data to recognise emotions or assign categories. Your personal
+      data is processed in line with our privacy policy.
+
+  - id: deepfake
+    article: "Art. 50(4), first subparagraph"
+    label: "Image, audio or video content that is a deepfake"
+    when: {field: generates_deepfakes, eq: true}
+    disclosure: >-
+      This image, audio or video was generated or altered with AI and does not
+      show a real event.
+
+  - id: ai_text_public_interest
+    article: "Art. 50(4), second subparagraph"
+    label: "AI-generated text published to inform the public on matters of public interest"
+    when:
+      all:
+        - {field: publishes_public_interest_text, eq: true}
+        - {not: {field: human_editorial_review, eq: true}}
+    disclosure: >-
+      This text was generated with AI and published without human editorial
+      review.
+
+# ---------------------------------------------------------------------------
+# Risk tier (first match wins)
+# ---------------------------------------------------------------------------
+risk_tiers:
+  - id: prohibited
+    article: "Art. 5"
+    when: {field: is_prohibited, eq: true}
+  - id: high_risk
+    article: "Art. 6"
+    when: {field: is_high_risk, eq: true}
+  - id: limited_risk
+    article: "Art. 50"
+    when: {field: transparency_triggered, eq: true}
+  - id: minimal_risk
+    article: "Art. 95 (voluntary codes of conduct)"
+    when: {always: true}
+
+# ---------------------------------------------------------------------------
+# General-purpose AI model use (first match wins)
+# ---------------------------------------------------------------------------
+gpai:
+  - id: provides_gpai_model
+    article: "Art. 3(63); Art. 53"
+    when: {field: trains_own_gpai_model, eq: true}
+  - id: integrates_third_party
+    article: "Art. 3(66); Art. 53(1)(b)"
+    when: {field: uses_gpai_model, eq: true}
+  - id: none
+    article: "-"
+    when: {always: true}
+
+# ---------------------------------------------------------------------------
+# AI literacy (Art. 4): applies to every provider and deployer
+# ---------------------------------------------------------------------------
+ai_literacy:
+  article: "Art. 4"
+  when:
+    any:
+      - {field: is_provider, eq: true}
+      - {field: is_deployer, eq: true}
+
+# ---------------------------------------------------------------------------
+# Obligations checklist. `evidence` names the fact that shows the obligation
+# is handled; if it is unknown or false the item goes on the gap list.
+# `deadline: high_risk` resolves to the earliest applicable high-risk date.
+# ---------------------------------------------------------------------------
+obligations:
+  - id: art4_ai_literacy
+    article: "Art. 4"
+    party: provider_or_deployer
+    title: "Ensure sufficient AI literacy of staff who operate or use the system"
+    deadline: ai_literacy
+    evidence: ai_literacy_programme
+    when: {field: ai_literacy_applies, eq: true}
+
+  - id: art5_stop_prohibited
+    article: "Art. 5(1)"
+    party: provider_or_deployer
+    title: "Stop or redesign: the system matches a prohibited AI practice"
+    deadline: prohibited_practices
+    evidence: null
+    when: {field: is_prohibited, eq: true}
+
+  - id: art50_1_disclose_interaction
+    article: "Art. 50(1)"
+    party: provider
+    title: "Design the system so people are told they are interacting with AI"
+    deadline: transparency
+    evidence: discloses_ai_interaction
+    when: {all: [{field: is_provider, eq: true}, {field: interacts_with_people, eq: true}]}
+
+  - id: art50_2_machine_readable_marking
+    article: "Art. 50(2)"
+    party: provider
+    title: "Mark synthetic output in a machine-readable format and make it detectable as AI-generated"
+    deadline: transparency
+    deadline_if_legacy: transparency_marking_legacy
+    evidence: marks_output_machine_readable
+    when: {all: [{field: is_provider, eq: true}, {field: generates_synthetic_content, eq: true}]}
+
+  - id: art50_3_inform_exposed_persons
+    article: "Art. 50(3)"
+    party: deployer
+    title: "Inform people exposed to emotion recognition or biometric categorisation"
+    deadline: transparency
+    evidence: informs_affected_persons
+    when:
+      all:
+        - {field: is_deployer, eq: true}
+        - any:
+            - {field: emotion_recognition, eq: true}
+            - {field: biometric_categorisation, eq: true}
+
+  - id: art50_4_label_deepfakes
+    article: "Art. 50(4)"
+    party: deployer
+    title: "Disclose that deepfake image, audio or video content is AI-generated or manipulated"
+    deadline: transparency
+    evidence: labels_ai_generated_content
+    when: {all: [{field: is_deployer, eq: true}, {field: generates_deepfakes, eq: true}]}
+
+  - id: art50_4_label_public_interest_text
+    article: "Art. 50(4)"
+    party: deployer
+    title: "Disclose that text published on matters of public interest is AI-generated"
+    deadline: transparency
+    evidence: labels_ai_generated_content
+    when:
+      all:
+        - {field: is_deployer, eq: true}
+        - {field: publishes_public_interest_text, eq: true}
+        - {not: {field: human_editorial_review, eq: true}}
+
+  - id: gpai_downstream_documentation
+    article: "Art. 53(1)(b); Art. 25(4)"
+    party: provider
+    title: "Obtain and keep the GPAI model provider's documentation for downstream providers"
+    deadline: gpai_obligations
+    evidence: has_gpai_provider_documentation
+    when: {all: [{field: is_provider, eq: true}, {field: uses_gpai_model, eq: true}]}
+
+  - id: gpai_provider_obligations
+    article: "Art. 53(1)(a)-(d)"
+    party: provider
+    title: "Keep GPAI model technical documentation, a copyright policy and a public training-content summary"
+    deadline: gpai_obligations
+    evidence: null
+    when: {field: trains_own_gpai_model, eq: true}
+
+  - id: art6_4_document_derogation
+    article: "Art. 6(4); Art. 49(2)"
+    party: provider
+    title: "Document the assessment that the Annex III system is not high-risk and register it in the EU database"
+    deadline: high_risk_annex_iii
+    evidence: null
+    when: {all: [{field: is_provider, eq: true}, {field: annex_iii_derogation, eq: true}]}
+
+  - id: art9_risk_management
+    article: "Art. 9"
+    party: provider
+    title: "Establish and maintain a risk management system"
+    deadline: high_risk
+    evidence: risk_management_description
+    when: {all: [{field: is_provider, eq: true}, {field: is_high_risk, eq: true}]}
+
+  - id: art10_data_governance
+    article: "Art. 10"
+    party: provider
+    title: "Apply data governance to training, validation and testing data"
+    deadline: high_risk
+    evidence: training_data_description
+    when: {all: [{field: is_provider, eq: true}, {field: is_high_risk, eq: true}]}
+
+  - id: art11_technical_documentation
+    article: "Art. 11; Annex IV"
+    party: provider
+    title: "Draw up Annex IV technical documentation (draft generated in this pack)"
+    deadline: high_risk
+    evidence: null
+    when: {all: [{field: is_provider, eq: true}, {field: is_high_risk, eq: true}]}
+
+  - id: art12_logging
+    article: "Art. 12"
+    party: provider
+    title: "Enable automatic event logging over the system's lifetime"
+    deadline: high_risk
+    evidence: has_event_logging
+    when: {all: [{field: is_provider, eq: true}, {field: is_high_risk, eq: true}]}
+
+  - id: art14_human_oversight
+    article: "Art. 14"
+    party: provider
+    title: "Design the system for effective human oversight"
+    deadline: high_risk
+    evidence: human_oversight_description
+    when: {all: [{field: is_provider, eq: true}, {field: is_high_risk, eq: true}]}
+
+  - id: art17_quality_management
+    article: "Art. 17"
+    party: provider
+    title: "Put a quality management system in place"
+    deadline: high_risk
+    evidence: has_quality_management_system
+    when: {all: [{field: is_provider, eq: true}, {field: is_high_risk, eq: true}]}
+
+  - id: art43_conformity_assessment
+    article: "Art. 43; Art. 47; Art. 48; Art. 49"
+    party: provider
+    title: "Complete conformity assessment, sign the EU declaration of conformity, affix CE marking and register"
+    deadline: high_risk
+    evidence: null
+    when: {all: [{field: is_provider, eq: true}, {field: is_high_risk, eq: true}]}
+
+  - id: art72_post_market_monitoring
+    article: "Art. 72"
+    party: provider
+    title: "Run a documented post-market monitoring system"
+    deadline: high_risk
+    evidence: post_market_monitoring_description
+    when: {all: [{field: is_provider, eq: true}, {field: is_high_risk, eq: true}]}
+
+  - id: art26_deployer_duties
+    article: "Art. 26"
+    party: deployer
+    title: "Use per instructions, assign human oversight, monitor operation and keep logs for at least six months"
+    deadline: high_risk
+    evidence: human_oversight_description
+    when: {all: [{field: is_deployer, eq: true}, {field: is_high_risk, eq: true}]}
+
+  - id: art26_7_inform_workers
+    article: "Art. 26(7)"
+    party: deployer
+    title: "Inform workers' representatives and affected workers before using a high-risk system at the workplace"
+    deadline: high_risk
+    evidence: null
+    when:
+      all:
+        - {field: is_deployer, eq: true}
+        - {field: high_risk_annex_iii, eq: true}
+        - {field: annex_iii_areas, intersects: [employment]}
+
+  - id: art27_fundamental_rights_impact
+    article: "Art. 27"
+    party: deployer
+    title: "Carry out a fundamental rights impact assessment before first use"
+    deadline: high_risk
+    evidence: null
+    when:
+      all:
+        - {field: is_deployer, eq: true}
+        - {field: high_risk_annex_iii, eq: true}
+        - {field: annex_iii_areas, intersects: [credit_scoring, life_health_insurance]}

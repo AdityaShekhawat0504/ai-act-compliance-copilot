@@ -1,15 +1,57 @@
-# AI Act Annex IV Compliance Copilot
+# AI Act Compliance Copilot
 
-Generates EU AI Act Annex IV technical documentation from MLOps artifacts (HuggingFace model cards, with MLflow runs and eval reports planned). Two-pass LLM extraction with independent grounding validation: every populated field carries provenance back to the source artifact, and ungrounded values are structurally rejected before reaching the output.
+EU AI Act tooling with two parts: an **Annex IV technical documentation generator** that grounds every field in the source artifact, and an **AI Act evidence pack** that turns a SaaS team's product docs or a short questionnaire into a classification, an obligations checklist with deadlines, and ready-to-send answers for customer questionnaires.
 
-*Build a verifiable compliance document instead of a fabricated one.*
+[![CI](https://github.com/AdityaShekhawat0504/ai-act-compliance-copilot/actions/workflows/ci.yml/badge.svg)](https://github.com/AdityaShekhawat0504/ai-act-compliance-copilot/actions/workflows/ci.yml)
 
-![Python 3.11](https://img.shields.io/badge/python-3.11-blue?style=flat-square)
-![uv managed](https://img.shields.io/badge/uv-managed-blueviolet?style=flat-square)
-![Tests 114/114](https://img.shields.io/badge/tests-114%2F114-brightgreen?style=flat-square)
-![License MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)
+## Why it matters
 
-## Headline results
+B2B SaaS companies that ship AI features to EU customers now get AI Act questionnaires from enterprise procurement: what is your role, is it high-risk, how do you meet Article 50, which models do you use. Answering them means reading Regulation (EU) 2024/1689, mapping your product onto it, and finding evidence in your own docs. LLM-only tools make this worse because they invent facts and classifications that nobody can check.
+
+This project keeps the LLM away from decisions. The LLM may only extract facts, every fact needs a quote that code finds verbatim in the source, and classification is done by fixed, versioned rules in code.
+
+## How it works
+
+```mermaid
+graph LR
+    subgraph inputs["Inputs"]
+        HF["HuggingFace<br/>model card"]
+        DOCS["Product docs<br/>README, model card,<br/>privacy policy<br/>(.md .txt .pdf)"]
+        Q["Questionnaire<br/>(YAML / web form)"]
+    end
+
+    subgraph extraction["Two-pass extraction (LLM)"]
+        P1["Pass 1<br/>candidate value + quote"]
+        QV["Code check<br/>quote verbatim<br/>in source?"]
+        P2["Pass 2<br/>independent<br/>grounding check"]
+    end
+
+    HF --> P1
+    DOCS --> P1
+    P1 --> QV --> P2
+
+    P2 --> ANNEX["Annex IV generator<br/>9 items, 29 fields,<br/>provenance per field"]
+    P2 --> FACTS["Facts<br/>known (with source)<br/>or unknown"]
+    Q --> FACTS
+
+    FACTS --> RULES["Classifier in code<br/>rules.yaml v1.0.0<br/>deadlines.yaml"]
+    RULES --> PACK["Evidence pack<br/>role, risk tier, Art. 50,<br/>GPAI, Art. 4,<br/>obligations + deadlines,<br/>disclosure texts, gaps"]
+    PACK --> OUT["PDF report<br/>answer sheet .md + .csv<br/>JSON, Annex IV draft"]
+    ANNEX --> PDF1["Annex IV PDF<br/>+ gap report"]
+```
+
+**Annex IV generator (v1).** For each of the nine Annex IV items, Pass 1 returns `FieldCandidate{value, found_in_source}` via structured outputs. Pass 2 is the only code path that can mark a field `filled`: it makes its own grounding-check LLM call against the raw source and attaches a `Provenance` record. Ungrounded values go to the gap report. 18 LLM calls per document (9 items x 2 passes).
+
+**Evidence pack (v2).** Facts come from two places:
+
+1. **Documents**, through the same two-pass pipeline. Pass 1 asks for a value and a verbatim quote per fact. Code checks that the quote is really in the document (only whitespace and curly quotes are normalised) before any second LLM call. Pass 2 reuses the existing `validate_grounding`. A fact is `known` only if both checks pass; otherwise it stays `unknown`.
+2. **A questionnaire** (YAML file or the web form). Answers are self-declared. An answer can cite a quote from a document; the quote is verified the same way and dropped with a note if it is not found.
+
+The classifier then evaluates `src/evidence_pack/data/rules.yaml` in code: role (Art. 3(3), 3(4), 25), prohibited practices (Art. 5), high-risk (Annex III areas, Art. 6(3) derogation, Annex I products), Article 50 triggers (chatbot, synthetic content, emotion recognition / biometric categorisation, deepfakes, AI text on public-interest matters), GPAI use and AI literacy (Art. 4). Unknown inputs are treated conservatively (an unanswered Art. 6(3) derogation keeps the system high-risk) and listed as gaps. All dates live in `src/evidence_pack/data/deadlines.yaml`.
+
+## Results
+
+### Annex IV generator: 10-model benchmark
 
 Benchmarked on 10 HuggingFace models with public model cards across diverse domains (NLP, vision, audio, biomedical, content moderation, embeddings, sentiment, summarization).
 
@@ -24,52 +66,29 @@ Benchmarked on 10 HuggingFace models with public model cards across diverse doma
 
 About 1 in 3 fields populated by the LLM-only baseline fail the grounding check: 31% in one run and 37% in the other, so the figure moves by several points between runs and should not be read more precisely than that. The other rows are from the 37% run. The two-pass 0% is by design, not a measured result: the rate counts filled fields that fail the grounding check, and Pass 2 is the only code path that can mark a field as filled, so the two-pass system scores 0% by construction. It does not measure how often the grounding check itself is wrong.
 
-28% completeness is the honest ceiling for public model cards. Annex IV has 29 fields across nine items, but items 5 (risk management per Article 9), 8 (EU declaration of conformity per Article 47), and 9 (post-market monitoring per Article 72) describe internal compliance processes that do not exist on HuggingFace. Items 6 (lifecycle changes) and 7 (harmonised standards) are similarly absent from public artifacts. These fields are structurally unreachable from a model card alone -- filling them requires internal documentation that the system is designed to ingest once MLflow and eval report loaders are implemented.
+28% completeness is the honest ceiling for public model cards. Items 5 (risk management, Art. 9), 8 (declaration of conformity, Art. 47) and 9 (post-market monitoring, Art. 72) describe internal processes that do not exist on HuggingFace; items 6 and 7 are similarly absent. The baseline's failure rate ranges from 0% on `facebook/bart-large-cnn` to 62% on `sentence-transformers/all-MiniLM-L6-v2`; the two-pass system rejects ungrounded fields whatever the input quality. Reproduce with `compliance-copilot benchmark` (writes to `benchmark/results/`, gitignored).
 
-The architecture's value is not absolute completeness -- it is invariance across input quality. The baseline hallucination rate ranges from 0% on `facebook/bart-large-cnn` (a thorough model card where the LLM happens to extract only grounded values) to 62% on `sentence-transformers/all-MiniLM-L6-v2` (a minimal card where the LLM fills 13 fields but only 5 are grounded). The two-pass system rejects the same ungrounded fields regardless of whether the model card is comprehensive or sparse. The cost of this invariance is 18 LLM calls per document instead of 9, and ~57s instead of ~32s -- paid explicitly for grounding rigor.
+### Evidence pack: classification eval
 
-The benchmark is reproducible: `compliance-copilot benchmark` re-runs extraction across all 10 models with artifact caching and writes per-model results to `benchmark/results/` (gitignored, not shipped with the repository).
+`eval/systems/` holds 15 fictional systems (helpdesk chatbot, CV screening, credit scoring, deepfake-capable image generator, workplace emotion recognition, news auto-writer with and without editorial review, Art. 6(3) derogation with and without profiling, Annex I medical device component, foundation model lab, white-label proctoring, and more), each with hand-written expected labels. `python eval/run_eval.py` runs them offline through the questionnaire path:
 
-## Architecture
+| Field | Accuracy |
+|---|---|
+| role | 100% (15/15) |
+| risk_tier | 100% (15/15) |
+| art50_triggers | 100% (15/15) |
+| gpai_use | 100% (15/15) |
+| ai_literacy | 100% (15/15) |
 
-```mermaid
-graph LR
-    subgraph artifacts["MLOps artifacts"]
-        A["HuggingFace<br/>model card"]
-        B["MLflow run<br/>(planned)"]
-        C["Eval report<br/>(planned)"]
-    end
+Read this as a regression check, not as validation: the expected labels and the rules were written by the same person from the same reading of the Act, so 100% shows the code does what the rules say, not that the rules are legally right. CI fails if any field drops below 100%. The eval also does not cover LLM extraction quality; that needs real documents and an API key.
 
-    A --> D["Ingestion<br/>YAML frontmatter +<br/>markdown sections<br/>via heading alias map"]
-    B -.-> D
-    C -.-> D
+### Demo
 
-    D --> E["NormalisedArtifact<br/>structured_content +<br/>raw_text"]
+The fictional company in `examples/brightloop/` (an HR SaaS with a candidate chat assistant, an AI job ad writer and AI shortlist ranking) goes from questionnaire plus three docs to a 6-page PDF report offline. Output of `evidence-pack demo --as-of 2026-11-03`: provider and deployer, high-risk (Annex III point 4, employment), Art. 50(1) and 50(2) triggered, third-party GPAI, 14 obligations, 10 gaps, and an Annex IV draft with 11 of 29 fields filled (38%), each with its source quote.
 
-    E --> F["Pass 1<br/>Candidate extraction<br/>FieldCandidate{value,<br/>found_in_source}"]
-    E --> G["Pass 2<br/>Grounding validation<br/>independent LLM check<br/>against raw_text"]
-    F --> G
+### Tests
 
-    G --> H["AnnexIVDocument<br/>9 items, 29 fields<br/>provenance-tracked"]
-
-    H --> I["Gap analysis<br/>completeness scores<br/>+ suggested sources"]
-    H --> J["PDF generator<br/>cover + 9 items +<br/>Appendix A (gaps) +<br/>Appendix B (provenance)"]
-    I --> J
-```
-
-The key design decision is the separation between Pass 1 and Pass 2. Pass 1 returns `FieldCandidate{value, found_in_source}` via structured outputs -- never the final `DocumentedField` directly. Pass 2 is the only code path that can mark a field as `status='filled'`, and it requires its own independent grounding-check LLM call against the raw source text before attaching a `Provenance` object. The LLM never has authority to mark a field as filled. Fabrication is structurally impossible, not policy-prohibited.
-
-## Two-pass extraction in detail
-
-### Pass 1: Candidate extraction
-
-For each of the nine Annex IV items, a per-item system prompt (composed from the regulation text in `src/annex_iv/reference/item_N.md` and a field specification with positive/negative examples) is sent alongside the full artifact text. The LLM returns an `instructor`-validated Pydantic model where every field is a `FieldCandidate{value: str | None, found_in_source: bool}`. Fields where the LLM reports `found_in_source=False` or returns a null value are immediately marked `status='unavailable'`. Fields with a candidate value are marked `status='pending'` -- they have not yet been validated.
-
-### Pass 2: Grounding validation
-
-Every `pending` field from Pass 1 is submitted to a second, independent LLM call. This call receives only the candidate value and the raw source text, and returns a `GroundingCheck{grounded: bool, locator: str | None, reasoning: str}`. If `grounded=True`, the field is promoted to `status='filled'` with a `Provenance` object recording the source artifact URI, the locator within the text, the extraction timestamp, and the model used. If `grounded=False`, the field is dropped to `status='unavailable'` and routed to the gap report. The two LLM calls see different prompts and make independent judgments.
-
-18 LLM calls per document (9 items x 2 passes). Single-pass would be 9 calls, but every populated field would be one LLM call away from fabrication. The cost is paid explicitly for grounding rigor.
+289 tests (114 for the Annex IV generator, 175 for the evidence pack). Every classification and obligation rule has a test, and a meta-test fails if a rule is added without one. All LLM calls are mocked; no test needs network or an API key.
 
 ## Quickstart
 
@@ -77,127 +96,75 @@ Every `pending` field from Pass 1 is submitted to a second, independent LLM call
 git clone https://github.com/AdityaShekhawat0504/ai-act-compliance-copilot.git
 cd ai-act-compliance-copilot
 uv sync
+
+# Evidence pack, fully offline: fictional demo company -> output/brightloop/
+uv run evidence-pack demo
+#   evidence_pack.pdf, questionnaire_answers.md, questionnaire_answers.csv,
+#   evidence_pack.json, annex_iv.pdf, annex_iv.json
+
+# Your own system: start from a blank questionnaire
+uv run evidence-pack template > my_system.yaml
+uv run evidence-pack build -q my_system.yaml -o output/my_system
+
+# Extract facts from your docs with the two-pass LLM pipeline
 export OPENAI_API_KEY="sk-..."
+uv run evidence-pack build -d README.md -d privacy_policy.pdf --llm -o output/my_system
+
+# Web UI (Streamlit is not a locked dependency, uv pulls it in for this command)
+uv run --with streamlit streamlit run app/streamlit_app.py
+
+# Annex IV generator from a HuggingFace model card
 uv run compliance-copilot generate google/gemma-2b -o output/
+
+# Tests, lint, eval
+uv run pytest
+uv run ruff check .
+uv run python eval/run_eval.py
 ```
 
-```
-Loading artifact from huggingface://google/gemma-2b...
-Item 1/9: 6 filled, 5 unavailable
-Item 2/9: 2 filled, 6 unavailable
-Item 3/9: 1 filled, 3 unavailable
-Item 4/9: 0 filled, 1 unavailable
-Item 5/9: 0 filled, 1 unavailable
-Item 6/9: 0 filled, 1 unavailable
-Item 7/9: 0 filled, 1 unavailable
-Item 8/9: 0 filled, 1 unavailable
-Item 9/9: 0 filled, 1 unavailable
+`compliance-copilot report output/<name>.annex_iv.json` re-runs the gap analysis without API cost. `compliance-copilot benchmark` re-runs the 10-model benchmark (about 30 minutes, about $0.20 in OpenAI tokens).
 
-Annex IV compliance: 9/29 fields filled (31%). Required-field completeness: 38%. 20 gaps identified across items [1, 2, 3, 4, 5, 6, 7, 8, 9].
-Gaps: 20
+## Tech stack
 
-Output files:
-  output/google__gemma-2b.annex_iv.json
-  output/google__gemma-2b.gap_report.json
-  output/google__gemma-2b.summary.txt
-  output/google__gemma-2b.pdf
-```
+Python 3.11, uv, Pydantic v2, instructor + OpenAI (gpt-4o-mini), PyYAML, reportlab (PDF output), pypdf (PDF input), huggingface_hub, typer and argparse (CLIs), Streamlit (UI), pytest, ruff, GitHub Actions.
 
-Four output files per model: the full Annex IV document as provenance-tracked JSON, a structured gap report identifying missing fields with suggested artifact sources, a human-readable summary, and a PDF documentation package with cover page, nine item sections, Appendix A (gap analysis), and Appendix B (provenance audit trail).
-
-To re-analyze a previously generated document without re-running extraction (no API cost):
-
-```bash
-uv run compliance-copilot report output/google__gemma-2b.annex_iv.json
-```
-
-To run the full 10-model benchmark (~30 minutes, ~$0.20 in OpenAI tokens):
-
-```bash
-uv run compliance-copilot benchmark
-```
-
-## What's in the repo
+## Project structure
 
 ```
 src/
-    annex_iv/
-        __init__.py
-        schema.py                   # Pydantic v2 models for items 1-9, DocumentedField, Provenance
-        reference/
-            item_1.md .. item_9.md  # Regulation text per item
-    ingestion/
-        __init__.py
-        base.py                     # NormalisedArtifact + ArtifactLoader ABC
-        huggingface.py              # HuggingFace model card parser
-        mlflow.py                   # (planned)
-        eval_report.py              # (planned)
-    extraction/
-        __init__.py
-        pipeline.py                 # Two-pass extraction orchestrator
-        prompts.py                  # Per-item system prompts + grounding validator prompt
-        validators.py               # Pass 2 grounding validation (GroundingCheck model)
-    gap_analysis/
-        __init__.py
-        analyzer.py                 # Completeness scoring, gap identification, field metadata
-    output/
-        __init__.py
-        pdf.py                      # PDF generation via reportlab.platypus
-        audit_trail.py              # (planned)
-    cli.py                          # Typer CLI: generate, report, benchmark, version
-
-benchmark/
-    __init__.py
-    baseline.py                     # Single-pass LLM-only extraction (no grounding)
-    models.yaml                     # 10 curated HuggingFace models
-    run_benchmark.py                # Orchestrator: runs both pipelines, measures metrics
-    results/                        # Generated by the benchmark run; gitignored
-        per_model.json              # Per-model completeness, hallucination, timing
-        aggregate.json              # Mean/median across all models
-        README_SNIPPET.md           # Auto-generated benchmark table
-
-tests/
-    __init__.py
-    fixtures/
-        huggingface/
-            nlp_thorough.json       # Cached model card with comprehensive sections
-            vision.json             # Cached vision model card
-            minimal.json            # Cached minimal model card
-    test_schema.py                  # 15 tests: field validation, round-trip serialization
-    test_ingestion.py               # 18 tests: HF parser, section extraction, frontmatter
-    test_extraction.py              # 13 tests: Pass 1 candidates, Pass 2 validation, orchestrator
-    test_gap_analysis.py            # 22 tests: completeness scoring, metadata coverage, helpers
-    test_cli.py                     # 10 tests: generate, report, version, error handling
-    test_pdf.py                     # 13 tests: PDF structure, edge cases, CLI flags
-    test_benchmark.py               # 13 tests: baseline, aggregation, README snippet, CLI
+  annex_iv/          Annex IV schema (9 items, 29 fields, provenance) + regulation text
+  ingestion/         HuggingFace model card loader (MLflow, eval reports planned)
+  extraction/        Two-pass pipeline: Pass 1 candidates, Pass 2 grounding check
+  gap_analysis/      Annex IV completeness and gap report
+  output/pdf.py      Annex IV PDF
+  cli.py             compliance-copilot CLI (generate, report, benchmark)
+  evidence_pack/
+    data/rules.yaml      versioned classification and obligation rules (article refs)
+    data/deadlines.yaml  every application date, in one place
+    facts.py             fact registry and evidence model
+    documents.py         .md/.txt/.pdf loading, verbatim quote check
+    extract.py           document facts via the two-pass pipeline
+    questionnaire.py     offline structured input
+    rules.py, classify.py  condition evaluator and classifier (no LLM)
+    report.py            obligations, gaps, disclosures, customer answers, Annex IV draft
+    export.py            PDF, Markdown, CSV, JSON
+    cli.py               evidence-pack CLI
+app/streamlit_app.py   web UI
+examples/brightloop/   fictional demo company (docs + questionnaire)
+eval/                  15 fictional systems + run_eval.py
+benchmark/             10-model Annex IV benchmark
+tests/                 289 tests, LLM mocked
+docs/ARCHITECTURE.md   components, data flow, design decisions
 ```
 
-## Regulatory alignment
+## Limitations and next steps
 
-Source: [Regulation (EU) 2024/1689](https://eur-lex.europa.eu/eli/reg/2024/1689/oj) (EU AI Act), published in OJ L, 12 July 2024. Annex IV specifies the technical documentation required under Article 11(1) for high-risk AI systems.
-
-| Annex IV item | Description | Schema model |
-|---|---|---|
-| 1 | General description of the AI system | `AnnexIVItem1General` |
-| 2 | Elements of the system and development process | `AnnexIVItem2Development` |
-| 3 | Monitoring, functioning and control | `AnnexIVItem3MonitoringControl` |
-| 4 | Appropriateness of performance metrics | `AnnexIVItem4PerformanceMetrics` |
-| 5 | Risk management system (Article 9) | `AnnexIVItem5RiskManagement` |
-| 6 | Relevant changes through the lifecycle | `AnnexIVItem6LifecycleChanges` |
-| 7 | Harmonised standards applied | `AnnexIVItem7HarmonisedStandards` |
-| 8 | EU declaration of conformity (Article 47) | `AnnexIVItem8DeclarationOfConformity` |
-| 9 | Post-market monitoring system (Article 72) | `AnnexIVItem9PostMarketMonitoring` |
-
-## Stack
-
-Python 3.11 · uv · Pydantic v2 · instructor · OpenAI gpt-4o-mini · huggingface_hub · reportlab · typer · pypdf · pytest
-
-## Limitations
-
-- **28% completeness ceiling on public model cards.** Annex IV items 5, 8, and 9 require internal documentation (risk management plans, declarations of conformity, post-market monitoring systems) that does not exist on HuggingFace. Multi-artifact ingestion is the path to higher completeness.
-- **Single-artifact ingestion only.** The current pipeline processes one HuggingFace model card per run. Multi-artifact fusion (model card + MLflow run + eval report) is the next architectural extension -- the `NormalisedArtifact` schema and loader ABC are designed for it.
-- **Binary grounding judgment.** Pass 2 returns `grounded: bool`. Confidence scores are recorded in `Provenance.confidence` but not yet used to weight downstream decisions or produce partial-credit completeness scores.
-- **English-only.** Regulation text, extraction prompts, and PDF output are in English. The EU AI Act applies across all 24 official EU languages.
+- **Not legal advice.** The rules cover the main decision points of the Act, not every exception (for example, Art. 2 exclusions, Art. 27 for public bodies, sector-specific Annex I procedures). The output is a starting point for counsel, and says so on every page.
+- **Dates need re-checking.** `deadlines.yaml` reflects the high-risk and Art. 50(2) dates as amended by the 2026 Digital Omnibus on AI. Verify them against the Official Journal before relying on them.
+- **The eval is a self-consistency check.** Labels were written alongside the rules. An independent set labelled by a lawyer is the next step.
+- **Extraction quality is not benchmarked for v2.** The quote check rules out invented quotes, but not a real quote that supports the wrong answer; Pass 2 is the only guard there. Measuring this needs a labelled document set.
+- **Annex IV completeness stays low from public docs.** Items 5 to 9 need internal process documents. Multi-artifact ingestion (MLflow, eval reports) is planned.
+- **English only**, single system per run, no persistence or multi-user features in the UI.
 
 ## Author
 
@@ -205,4 +172,4 @@ Python 3.11 · uv · Pydantic v2 · instructor · OpenAI gpt-4o-mini · huggingf
 
 ## License
 
-MIT. This is a portfolio demonstration of automated regulatory documentation extraction, not legal advice, and not a substitute for professional regulatory assessment under Regulation (EU) 2024/1689.
+MIT. This is a portfolio project, not legal advice, and not a substitute for professional regulatory assessment under Regulation (EU) 2024/1689. The example company and all eval systems are fictional.

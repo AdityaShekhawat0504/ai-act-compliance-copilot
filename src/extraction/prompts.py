@@ -8,8 +8,6 @@ Prompts are constants composed at module load time from the regulation text
 in src/annex_iv/reference/item_N.md and a per-item field specification.
 Artifact content is NOT injected at module level — that happens inside the
 extraction call.
-
-See CLAUDE.md: "No bare LLM calls" and "No fabrication"
 """
 
 from __future__ import annotations

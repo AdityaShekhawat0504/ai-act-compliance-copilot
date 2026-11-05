@@ -1,0 +1,47 @@
+# Application dates used by the evidence pack. This is the ONLY place dates live.
+#
+# Source: Regulation (EU) 2024/1689 (EU AI Act), Article 113, with the
+# high-risk and Article 50(2) dates as amended by the 2026 Digital Omnibus on AI.
+#
+# IMPORTANT: these dates MUST be re-checked against the Official Journal of the
+# European Union (https://eur-lex.europa.eu) before anyone relies on them.
+# Bump `version` whenever a date changes.
+version: "2026-11-03"
+
+deadlines:
+  prohibited_practices:
+    date: 2025-02-02
+    article: "Art. 5; Art. 113(a)"
+    label: "Prohibited AI practices banned"
+
+  ai_literacy:
+    date: 2025-02-02
+    article: "Art. 4; Art. 113(a)"
+    label: "AI literacy obligation applies"
+
+  gpai_obligations:
+    date: 2025-08-02
+    article: "Art. 53-55; Art. 113(b)"
+    label: "Obligations for providers of general-purpose AI models apply"
+
+  transparency:
+    date: 2026-08-02
+    article: "Art. 50; Art. 113"
+    label: "Article 50 transparency obligations apply"
+
+  transparency_marking_legacy:
+    date: 2026-12-02
+    article: "Art. 50(2), as amended by the 2026 Digital Omnibus on AI"
+    label: >-
+      Grace period ends for machine-readable marking by generative AI systems
+      already placed on the market before 2 August 2026
+
+  high_risk_annex_iii:
+    date: 2027-12-02
+    article: "Art. 6(2), Annex III, as amended by the 2026 Digital Omnibus on AI"
+    label: "Obligations for standalone high-risk AI systems (Annex III) apply"
+
+  high_risk_annex_i:
+    date: 2028-08-02
+    article: "Art. 6(1), Annex I, as amended by the 2026 Digital Omnibus on AI"
+    label: "Obligations for high-risk AI in Annex I regulated products apply"

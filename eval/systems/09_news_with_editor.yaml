@@ -1,0 +1,25 @@
+# FICTIONAL SYSTEM, for evaluation only. Not a real company or product.
+name: "Fictional: Harbour Gazette AI drafts with editor sign-off"
+description: A newspaper drafts articles with an LLM; an editor reviews and signs off every article.
+answers:
+  places_on_market_under_own_name: no
+  rebrands_or_substantially_modifies: no
+  uses_ai_internally: yes
+  prohibited_practices: []
+  annex_iii_areas: []
+  safety_component_annex_i_product: no
+  interacts_with_people: no
+  generates_synthetic_content: yes
+  emotion_recognition: no
+  biometric_categorisation: no
+  generates_deepfakes: no
+  publishes_public_interest_text: yes
+  human_editorial_review: yes
+  uses_gpai_model: yes
+  trains_own_gpai_model: no
+expected:
+  role: deployer
+  risk_tier: limited_risk
+  art50_triggers: [synthetic_content]
+  gpai_use: integrates_third_party
+  ai_literacy: true

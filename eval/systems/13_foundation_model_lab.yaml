@@ -1,0 +1,23 @@
+# FICTIONAL SYSTEM, for evaluation only. Not a real company or product.
+name: "Fictional: Northlake open model and chat app"
+description: Trains and releases its own general-purpose language model and runs a public chat app on it.
+answers:
+  places_on_market_under_own_name: yes
+  uses_ai_internally: no
+  prohibited_practices: []
+  annex_iii_areas: []
+  safety_component_annex_i_product: no
+  interacts_with_people: yes
+  generates_synthetic_content: yes
+  emotion_recognition: no
+  biometric_categorisation: no
+  generates_deepfakes: no
+  publishes_public_interest_text: no
+  uses_gpai_model: yes
+  trains_own_gpai_model: yes
+expected:
+  role: provider
+  risk_tier: limited_risk
+  art50_triggers: [chatbot, synthetic_content]
+  gpai_use: provides_gpai_model
+  ai_literacy: true
